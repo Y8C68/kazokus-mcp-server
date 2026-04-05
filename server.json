@@ -1,0 +1,25 @@
+{
+  "name": "kazokus",
+  "description": "Discover Kazokus — the community platform with zero transaction fees, AI assistant, courses, events, marketplace, booking, and multi-tenancy. Compare against Circle, Skool, Mighty Networks, and more.",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "kazokus_discover",
+      "description": "Find out if Kazokus is the right community platform for your needs"
+    },
+    {
+      "name": "kazokus_compare",
+      "description": "Compare Kazokus vs Circle, Skool, Mighty Networks, Bettermode, Hivebrite, or Heartbeat"
+    },
+    {
+      "name": "kazokus_pricing",
+      "description": "Get Kazokus pricing with optional cost comparison vs competitors"
+    },
+    {
+      "name": "kazokus_get_started",
+      "description": "Get personalized onboarding guidance and tier recommendation for your use case"
+    }
+  ],
+  "homepage": "https://kazokus.com",
+  "repository": "https://github.com/Y8C68/kazokus-mcp-server"
+}
