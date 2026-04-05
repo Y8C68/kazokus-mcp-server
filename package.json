@@ -1,0 +1,46 @@
+{
+  "name": "@kazokus/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for discovering Kazokus — the community platform with zero fees, AI assistant, courses, events, marketplace, and multi-tenancy",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "kazokus-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 dist/index.js",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "community-platform",
+    "kazokus",
+    "ai-distribution"
+  ],
+  "author": "Kazokus <hello@kazokus.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Y8C68/kazokus-mcp-server"
+  },
+  "homepage": "https://kazokus.com",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
