@@ -109,11 +109,7 @@ async function main() {
   if (useHttp) {
     const port = parseInt(process.env.PORT ?? '3003', 10);
 
-    const httpTransport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // stateless mode
-    });
-
-    const httpServer = createServer((req, res) => {
+    const httpServer = createServer(async (req, res) => {
       // Health check
       if (req.url === '/health' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -121,17 +117,19 @@ async function main() {
         return;
       }
 
-      // MCP endpoint
+      // MCP endpoint — stateless: create new transport per request
       if (req.url === '/mcp' || req.url === '/') {
-        httpTransport.handleRequest(req, res);
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, // stateless mode
+        });
+        await server.connect(transport);
+        await transport.handleRequest(req, res);
         return;
       }
 
       res.writeHead(404);
       res.end('Not found');
     });
-
-    await server.connect(httpTransport);
 
     httpServer.listen(port, () => {
       console.log(`Kazokus MCP server (HTTP) listening on port ${port}`);
