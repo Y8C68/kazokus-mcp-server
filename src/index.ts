@@ -2,16 +2,25 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { createServer } from 'node:http';
 import { z } from 'zod';
 import { handleDiscover } from './tools/discover.js';
 import { handleCompare } from './tools/compare.js';
 import { handlePricing } from './tools/pricing.js';
 import { handleGetStarted } from './tools/get-started.js';
+import { handleSearchCommunities } from './tools/search-communities.js';
+import { handleTrending } from './tools/trending.js';
+import { KazokusApiClient } from './api/client.js';
+
+const apiClient = new KazokusApiClient(process.env.KAZOKUS_API_URL ?? 'https://www.kazokus.com');
 
 const server = new McpServer({
   name: 'kazokus',
-  version: '1.0.0',
+  version: '2.0.0',
 });
+
+// --- Static tools (Phase 1) ---
 
 server.tool(
   'kazokus_discover',
@@ -63,9 +72,74 @@ server.tool(
   }
 );
 
+// --- Live tools (Phase 2) ---
+
+server.tool(
+  'kazokus_search_communities',
+  'Search for real Kazokus communities by topic, interest, or keyword. Returns live community data from the platform.',
+  {
+    query: z.string().describe('Search term (e.g. "yoga", "book club", "dance studio", "tech startups")'),
+    category: z.string().optional().describe('Filter by category slug'),
+    limit: z.number().optional().default(5).describe('Number of results (1-10, default 5)'),
+  },
+  async ({ query, category, limit }) => {
+    const result = await handleSearchCommunities({ query, category, limit }, apiClient);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  'kazokus_trending',
+  'Get trending communities on Kazokus right now. Shows the most active and fastest-growing communities.',
+  {
+    category: z.string().optional().describe('Filter by category slug'),
+    limit: z.number().optional().default(5).describe('Number of results (1-10, default 5)'),
+  },
+  async ({ category, limit }) => {
+    const result = await handleTrending({ category, limit }, apiClient);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// --- Transport selection ---
+
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  const useHttp = process.argv.includes('--http') || !!process.env.PORT;
+
+  if (useHttp) {
+    const port = parseInt(process.env.PORT ?? '3003', 10);
+
+    const httpTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless mode
+    });
+
+    const httpServer = createServer((req, res) => {
+      // Health check
+      if (req.url === '/health' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('ok');
+        return;
+      }
+
+      // MCP endpoint
+      if (req.url === '/mcp' || req.url === '/') {
+        httpTransport.handleRequest(req, res);
+        return;
+      }
+
+      res.writeHead(404);
+      res.end('Not found');
+    });
+
+    await server.connect(httpTransport);
+
+    httpServer.listen(port, () => {
+      console.log(`Kazokus MCP server (HTTP) listening on port ${port}`);
+    });
+  } else {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+  }
 }
 
 main().catch((error) => {
