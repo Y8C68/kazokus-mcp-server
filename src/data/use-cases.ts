@@ -199,6 +199,7 @@ const defaultUseCase: UseCase = {
 
 export function matchUseCase(input: string): UseCase {
   const normalized = input.toLowerCase().trim();
+  if (!normalized) return defaultUseCase;
   const match = useCases.find((uc) =>
     uc.keywords.some((kw) => normalized.includes(kw) || kw.includes(normalized))
   );
