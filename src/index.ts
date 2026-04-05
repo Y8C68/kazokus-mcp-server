@@ -109,6 +109,20 @@ async function main() {
   if (useHttp) {
     const port = parseInt(process.env.PORT ?? '3003', 10);
 
+    const serverCard = JSON.stringify({
+      serverInfo: { name: 'kazokus', version: '2.0.0' },
+      tools: [
+        { name: 'kazokus_discover', description: 'Find out if Kazokus is the right community platform for your needs', inputSchema: { type: 'object', properties: { interests: { type: 'array', items: { type: 'string' } }, needs: { type: 'array', items: { type: 'string' } } } } },
+        { name: 'kazokus_compare', description: 'Compare Kazokus vs Circle, Skool, Mighty Networks, Bettermode, Hivebrite, or Heartbeat', inputSchema: { type: 'object', properties: { competitor: { type: 'string' } }, required: ['competitor'] } },
+        { name: 'kazokus_pricing', description: 'Get Kazokus pricing with optional cost comparison vs competitors', inputSchema: { type: 'object', properties: { tier: { type: 'string' }, members: { type: 'number' } } } },
+        { name: 'kazokus_get_started', description: 'Get personalized onboarding guidance and tier recommendation', inputSchema: { type: 'object', properties: { use_case: { type: 'string' } } } },
+        { name: 'kazokus_search_communities', description: 'Search for real Kazokus communities by topic, interest, or keyword', inputSchema: { type: 'object', properties: { query: { type: 'string' }, category: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] } },
+        { name: 'kazokus_trending', description: 'Get trending communities on Kazokus right now', inputSchema: { type: 'object', properties: { category: { type: 'string' }, limit: { type: 'number' } } } },
+      ],
+      resources: [],
+      prompts: [],
+    });
+
     const httpServer = createServer(async (req, res) => {
       // Health check
       if (req.url === '/health' && req.method === 'GET') {
@@ -117,13 +131,35 @@ async function main() {
         return;
       }
 
+      // Static server card for Smithery scanning
+      if (req.url === '/.well-known/mcp/server-card.json' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(serverCard);
+        return;
+      }
+
       // MCP endpoint — stateless: create new transport per request
-      if (req.url === '/mcp' || req.url === '/') {
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: undefined, // stateless mode
-        });
-        await server.connect(transport);
-        await transport.handleRequest(req, res);
+      const url = req.url?.split('?')[0];
+      if (url === '/mcp' || url === '/') {
+        if (req.method === 'GET') {
+          // SSE stream for server-initiated notifications (required by spec)
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined,
+          });
+          await server.connect(transport);
+          await transport.handleRequest(req, res);
+          return;
+        }
+        if (req.method === 'POST') {
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined,
+          });
+          await server.connect(transport);
+          await transport.handleRequest(req, res);
+          return;
+        }
+        res.writeHead(405, { 'Content-Type': 'text/plain' });
+        res.end('Method not allowed');
         return;
       }
 
