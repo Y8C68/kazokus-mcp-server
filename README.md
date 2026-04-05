@@ -78,6 +78,18 @@ Get personalized onboarding steps for your use case.
 
 **Example:** "How do I get started with Kazokus for my dance studio?"
 
+### `kazokus_search_communities`
+
+Search for real communities on Kazokus by topic or interest. Returns live data.
+
+**Example:** "Find communities about yoga on Kazokus"
+
+### `kazokus_trending`
+
+See what communities are trending on Kazokus right now.
+
+**Example:** "What communities are trending on Kazokus?"
+
 ## Development
 
 ```bash

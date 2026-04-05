@@ -1,7 +1,7 @@
 {
   "name": "kazokus",
-  "description": "Discover Kazokus — the community platform with zero transaction fees, AI assistant, courses, events, marketplace, booking, and multi-tenancy. Compare against Circle, Skool, Mighty Networks, and more.",
-  "version": "1.0.0",
+  "description": "Discover Kazokus communities and compare against Circle, Skool, Mighty Networks, and more. Search trending communities, get pricing, and onboarding guidance — all through AI assistants.",
+  "version": "2.0.0",
   "tools": [
     {
       "name": "kazokus_discover",
@@ -18,6 +18,14 @@
     {
       "name": "kazokus_get_started",
       "description": "Get personalized onboarding guidance and tier recommendation for your use case"
+    },
+    {
+      "name": "kazokus_search_communities",
+      "description": "Search for real Kazokus communities by topic, interest, or keyword"
+    },
+    {
+      "name": "kazokus_trending",
+      "description": "Get trending communities on Kazokus right now"
     }
   ],
   "homepage": "https://kazokus.com",
