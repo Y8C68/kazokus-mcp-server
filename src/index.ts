@@ -116,27 +116,25 @@ function createMcpServer(): McpServer {
 
 // --- Transport selection ---
 
-async function main() {
-  const useHttp = process.argv.includes('--http') || !!process.env.PORT;
+const SERVER_CARD = JSON.stringify({
+  serverInfo: { name: 'kazokus', version: '2.0.0' },
+  tools: [
+    { name: 'kazokus_discover', description: 'Find out if Kazokus is the right community platform for your needs', inputSchema: { type: 'object', properties: { interests: { type: 'array', items: { type: 'string' } }, needs: { type: 'array', items: { type: 'string' } } } } },
+    { name: 'kazokus_compare', description: 'Compare Kazokus vs Circle, Skool, Mighty Networks, Bettermode, Hivebrite, or Heartbeat', inputSchema: { type: 'object', properties: { competitor: { type: 'string' } }, required: ['competitor'] } },
+    { name: 'kazokus_pricing', description: 'Get Kazokus pricing with optional cost comparison vs competitors', inputSchema: { type: 'object', properties: { tier: { type: 'string' }, members: { type: 'number' } } } },
+    { name: 'kazokus_get_started', description: 'Get personalized onboarding guidance and tier recommendation', inputSchema: { type: 'object', properties: { use_case: { type: 'string' } } } },
+    { name: 'kazokus_search_communities', description: 'Search for real Kazokus communities by topic, interest, or keyword', inputSchema: { type: 'object', properties: { query: { type: 'string' }, category: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] } },
+    { name: 'kazokus_trending', description: 'Get trending communities on Kazokus right now', inputSchema: { type: 'object', properties: { category: { type: 'string' }, limit: { type: 'number' } } } },
+  ],
+  resources: [],
+  prompts: [],
+});
 
-  if (useHttp) {
-    const port = parseInt(process.env.PORT ?? '3003', 10);
+/** Build the HTTP server (not yet listening) so it can be unit-tested. */
+function buildHttpServer() {
+  const serverCard = SERVER_CARD;
 
-    const serverCard = JSON.stringify({
-      serverInfo: { name: 'kazokus', version: '2.0.0' },
-      tools: [
-        { name: 'kazokus_discover', description: 'Find out if Kazokus is the right community platform for your needs', inputSchema: { type: 'object', properties: { interests: { type: 'array', items: { type: 'string' } }, needs: { type: 'array', items: { type: 'string' } } } } },
-        { name: 'kazokus_compare', description: 'Compare Kazokus vs Circle, Skool, Mighty Networks, Bettermode, Hivebrite, or Heartbeat', inputSchema: { type: 'object', properties: { competitor: { type: 'string' } }, required: ['competitor'] } },
-        { name: 'kazokus_pricing', description: 'Get Kazokus pricing with optional cost comparison vs competitors', inputSchema: { type: 'object', properties: { tier: { type: 'string' }, members: { type: 'number' } } } },
-        { name: 'kazokus_get_started', description: 'Get personalized onboarding guidance and tier recommendation', inputSchema: { type: 'object', properties: { use_case: { type: 'string' } } } },
-        { name: 'kazokus_search_communities', description: 'Search for real Kazokus communities by topic, interest, or keyword', inputSchema: { type: 'object', properties: { query: { type: 'string' }, category: { type: 'string' }, limit: { type: 'number' } }, required: ['query'] } },
-        { name: 'kazokus_trending', description: 'Get trending communities on Kazokus right now', inputSchema: { type: 'object', properties: { category: { type: 'string' }, limit: { type: 'number' } } } },
-      ],
-      resources: [],
-      prompts: [],
-    });
-
-    const httpServer = createServer(async (req, res) => {
+  return createServer(async (req, res) => {
       // Health check
       if (req.url === '/health' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -155,7 +153,7 @@ async function main() {
       // concurrent connections never share a Protocol instance (see issue #2).
       const url = req.url?.split('?')[0];
       if (url === '/mcp' || url === '/') {
-        if (req.method === 'GET' || req.method === 'POST') {
+        if (req.method === 'POST') {
           const mcpServer = createMcpServer();
           const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined,
@@ -180,16 +178,32 @@ async function main() {
           }
           return;
         }
-        res.writeHead(405, { 'Content-Type': 'text/plain' });
-        res.end('Method not allowed');
+        // Stateless server (sessionIdGenerator: undefined) has no session to
+        // attach a server->client stream to, so GET/DELETE are not supported.
+        // Per the MCP Streamable-HTTP spec, return 405 with a JSON-RPC error.
+        res.writeHead(405, {
+          'Content-Type': 'application/json',
+          'Allow': 'POST',
+        });
+        res.end(JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32000, message: 'Method not allowed. This server is stateless; use POST.' },
+          id: null,
+        }));
         return;
       }
 
       res.writeHead(404);
       res.end('Not found');
     });
+}
 
-    httpServer.listen(port, () => {
+async function main() {
+  const useHttp = process.argv.includes('--http') || !!process.env.PORT;
+
+  if (useHttp) {
+    const port = parseInt(process.env.PORT ?? '3003', 10);
+    buildHttpServer().listen(port, () => {
       console.log(`Kazokus MCP server (HTTP) listening on port ${port}`);
     });
   } else {
@@ -199,7 +213,7 @@ async function main() {
   }
 }
 
-export { createMcpServer, main };
+export { createMcpServer, buildHttpServer, main };
 
 // Only boot when executed directly (not when imported by tests).
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
