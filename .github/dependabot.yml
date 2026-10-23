@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Keeps the Dockerfile's exact Node pin current within the 22.x line. A major
+  # Node upgrade is a deliberate change, not a Dependabot bump.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

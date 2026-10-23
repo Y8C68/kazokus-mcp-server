@@ -1,5 +1,10 @@
+# Node is pinned to an exact release so a security fix is a reviewed change
+# that triggers a fresh image, not whatever a floating tag resolved to.
+# 22.23.4 fixes CVE-2026-111497 (Brotli decompression RCE). Dependabot
+# proposes new 22.x releases; keep both stages on the same version.
+
 # --- build stage: compile TypeScript -> dist/ ---
-FROM node:22-alpine AS build
+FROM node:22.23.4-alpine AS build
 
 WORKDIR /app
 
@@ -10,7 +15,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # --- runtime stage: prod deps + compiled output only ---
-FROM node:22-alpine
+FROM node:22.23.4-alpine
 
 WORKDIR /app
 
