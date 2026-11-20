@@ -4,7 +4,7 @@
 # proposes new 22.x releases; keep both stages on the same version.
 
 # --- build stage: compile TypeScript -> dist/ ---
-FROM node:22.23.4-alpine AS build
+FROM node:22.23.5-alpine AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # --- runtime stage: prod deps + compiled output only ---
-FROM node:22.23.4-alpine
+FROM node:22.23.5-alpine
 
 WORKDIR /app
 
